@@ -1,0 +1,40 @@
+---
+- name: Update packages
+  shell:
+    cmd: pacman -Syu --noconfirm
+  become: true
+
+- name: Create Secondary Mount Directory
+  file:
+    path: /home/{{ user }}/Data
+    state: directory
+    mode: '0755'
+    owner: {{ user }}
+    group: {{ group }}
+
+- name: Mount Secondary Volume
+  ansible.posix.mount:
+    path: /home/{{ user }}/Data
+    src: UUID={{ UUID }}
+    fstype: ext4
+    opts: noatime
+    state: present
+  ignore_errors: true
+
+- name: Install Required Packages
+  shell:
+    cmd: pacman -S {{ item }} --noconfirm
+  loop: 
+    - firefox
+    - timeshift
+    - base-devel
+    - neofetch
+    - git
+    - bash-completion
+    - fwupd
+
+- name: Start and enable bluetooth service
+  systemd_service:
+    name: bluetooth
+    state: started
+    enabled: true
