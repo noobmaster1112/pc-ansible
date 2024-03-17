@@ -9,8 +9,8 @@
     path: /home/{{ user }}/Data
     state: directory
     mode: '0755'
-    owner: {{ user }}
-    group: {{ group }}
+    owner: "{{ user }}"
+    group: "{{ group }}"
 
 - name: Mount Secondary Volume
   ansible.posix.mount:
@@ -32,9 +32,39 @@
     - git
     - bash-completion
     - fwupd
+    - curl
 
 - name: Start and enable bluetooth service
   systemd_service:
     name: bluetooth
     state: started
     enabled: true
+
+- name: Install yay
+  shell:
+    cmd: git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si
+    chdir: /tmp
+
+- name: Install oh-my-bash
+  shell:
+    cmd: bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)" --prefix=/usr/local
+  become: true
+
+- name: Change bashrc
+  shell:
+    cmd: cp /etc/bash.bashrc /etc/bash.bashrc_bkp && cat /usr/local/share/oh-my-bash/bashrc >> /etc/bash.bashrc 
+  become: true
+
+- name: Load random oh-my-bash themes
+  replace:
+    path: /etc/bash.bashrc
+    regexp: '^OSH_THEME=.*$'
+    replace: 'OSH_THEME="random"'
+
+- name: Add git config
+  template:
+    src: gitconfig.j2
+    dest: /home/{{ user }}/.gitconfig
+    owner: "{{ user }}"
+    group: "{{ group }}"
+    mode: "0644"
